@@ -8,6 +8,7 @@ import api from '../utils/api';
 import { CurrentUserContext } from '../contexts/CurrentUserContext';
 import EditAvatarModal from './EditAvatarModal';
 import AddPlaceModal from './AddPlaceModal';
+import Login from './Login';
 
 function App() {
   const [isEditAvatarModalOpen, setIsEditAvatarModalOpen] = useState(false);
@@ -141,6 +142,8 @@ function App() {
             onCardLike={handleCardLike}
             onLoading={isLoading}
           />
+
+          <Login />
 
           <Footer copyright="© 2020 Mesto Russia. Сергей Компаниец" />
 
