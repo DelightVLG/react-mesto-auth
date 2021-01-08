@@ -47,4 +47,9 @@
 @import url('./blocks/modal/__preview-container/modal__preview-container.css');
 @import url('./blocks/modal/__preview-img/modal__preview-img.css');
 @import url('./blocks/modal/__preview-subtitle/modal__preview-subtitle.css');
+@import url('./blocks/login/login.css');
+@import url('./blocks/login/__header/login__header.css');
+@import url('./blocks/login/__form/login__form.css');
+@import url('./blocks/login/__form-input/login__form-input.css');
+@import url('./blocks/login/__form-submit-btn/login__form-submit-btn.css');
 @import url('./blocks/spinner/spinner.css');
