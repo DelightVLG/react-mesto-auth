@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
+import { Link } from "react-router-dom";
 
-const Login = ({ handleLogin }) => {
+const Register =  ({ handleRegister, isDataSet }) => {
 
   const [data, setData] = useState({
     email: "",
@@ -18,20 +19,23 @@ const Login = ({ handleLogin }) => {
 
   const handleSubmit = (e) => {
     e.preventDefault();
+
     const { email, password } = data;
-    handleLogin(email, password);
+    handleRegister(password, email);
+
+    if (isDataSet) {
+      setData({ email: "", password: "" });
+    }
   };
 
   return (
-    <div onSubmit={handleSubmit} className="login">
+    <div className="register">
+      <h2 className="register__header">Регистрация</h2>
 
-      <h2 className="login__header">Вход</h2>
-
-      <form className="login__form">
+      <form onSubmit={handleSubmit} className="register__form">
         <input
-          className="login__form-input"
+          className="register__form-input"
           id="email"
-          required
           name="email"
           type="email"
           value={data.email || ''}
@@ -40,9 +44,8 @@ const Login = ({ handleLogin }) => {
         />
 
         <input
-          className="login__form-input"
+          className="register__form-input"
           id="password"
-          required
           name="password"
           type="password"
           value={data.password || ''}
@@ -50,10 +53,15 @@ const Login = ({ handleLogin }) => {
           placeholder="Пароль"
         />
 
-        <button type="submit" className="login__form-submit-btn">Войти</button>
+        <button type="submit" className="register__form-submit-btn">Зарегистрироваться</button>
       </form>
+
+      <p className="register__footer">
+        Уже зарегистрированы?&nbsp;
+        <Link to="sign-in" className="register__login-link">Войти</Link>
+      </p>
     </div>
   )
 }
 
-export default Login;
+export default Register;

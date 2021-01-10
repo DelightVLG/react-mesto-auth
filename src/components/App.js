@@ -1,23 +1,70 @@
 import React, { useState, useEffect } from 'react';
+import { Route, Switch, Redirect, useHistory } from 'react-router-dom';
+import ProtectedRoute from './ProtectedRoute';
+
+import api from '../utils/api';
+import * as auth from '../utils/auth';
+import { CurrentUserContext } from '../contexts/CurrentUserContext';
+
 import Header from './Header';
 import Main from './Main';
 import Footer from './Footer';
 import ImageModal from './ImageModal';
 import EditProfileModal from './EditProfileModal';
-import api from '../utils/api';
-import { CurrentUserContext } from '../contexts/CurrentUserContext';
 import EditAvatarModal from './EditAvatarModal';
 import AddPlaceModal from './AddPlaceModal';
 import Login from './Login';
+import Register from './Register';
+import InfoToolTip from './InfoTooltip';
 
 function App() {
   const [isEditAvatarModalOpen, setIsEditAvatarModalOpen] = useState(false);
   const [isEditProfileModalOpen, setIsEditProfileModalOpen] = useState(false);
   const [isAddPlaceModalOpen, setIsAddPlaceModalOpen] = useState(false);
+  const [isInfoToolTipOpen, setIsInfoToolTipOpen] = React.useState(false);
   const [selectedCard, setSelectedCard] = useState({ isImgOpen: false });
   const [currentUser, setCurrentUser] = useState({});
   const [cards, setCards] = useState([]);
+  const [isDataSet, setIsDataSet] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
+
+  const [infoToolTipData, setInfoToolTipData] = useState({
+    title: "Что-то пошло не так! Попробуйте ещё раз.",
+    icon: false,
+  });
+
+  const [userData, setUserData] = useState({
+    email: "",
+  });
+
+  const [loggedIn, setLoggedIn] = useState(false);
+
+  const history = useHistory();
+
+  const tokenCheck = () => {
+    const token = localStorage.getItem("token");
+    if (token) {
+      auth
+        .getContent(token)
+        .then((res) => {
+          if (res) {
+            setUserData({ email: res.data.email });
+            setLoggedIn(true);
+          }
+        })
+        .catch((err) => console.log(err));
+    }
+  };
+
+  React.useEffect(() => {
+    tokenCheck();
+  }, []);
+
+  React.useEffect(() => {
+    if (loggedIn) {
+      history.push("/");
+    }
+  }, [history, loggedIn]);
 
   useEffect(() => {
     setIsLoading(true);
@@ -46,6 +93,55 @@ function App() {
         console.error(err);
       });
   }, []);
+
+  function handleInfoToolTip() {
+    setIsInfoToolTipOpen(true);
+  }
+
+  const handleLogin = (email, password) => {
+    auth
+      .authorize(email, password)
+      .then(handleResponse)
+      .catch((err) => console.log(err));
+  };
+
+  const handleLogout = () => {
+    localStorage.removeItem("token");
+    setUserData({ email: "" });
+    setLoggedIn(false);
+  };
+
+  const handleResponse = (data) => {
+    auth
+      .getContent(data.token)
+      .then((res) => {
+        setUserData({ email: res.data.email });
+      })
+      .catch((err) => console.log(err));
+
+    localStorage.setItem("token", data.token);
+
+    setLoggedIn(true);
+  };
+
+  const handleRegister = (password, email) => {
+    auth
+      .register(password, email)
+      .then(() => {
+        setIsDataSet(true);
+        history.push("/sign-in");
+        setInfoToolTipData({ icon: true, title: "Вы успешно зарегистрировались!" });
+        handleInfoToolTip();
+      })
+      .catch(() => {
+        setIsDataSet(false);
+        setInfoToolTipData({
+          icon: false,
+          title: "Что-то пошло не так! Попробуйте ещё раз.",
+        });
+        handleInfoToolTip();
+      });
+  };
 
   const handleEditAvatarClick = () => {
     setIsEditAvatarModalOpen(true);
@@ -124,27 +220,47 @@ function App() {
     setIsEditProfileModalOpen(false);
     setIsAddPlaceModalOpen(false);
     setSelectedCard({ isImgOpen: false });
+    setIsInfoToolTipOpen(false);
   };
 
   return (
     <CurrentUserContext.Provider value={currentUser}>
       <div className="page">
         <div className="page__container">
-          <Header />
+          <Header
+            handleLogout={handleLogout}
+            email={userData.email}/>
 
-          <Main
-            onEditAvatar={handleEditAvatarClick}
-            onEditProfile={handleEditProfileClick}
-            onAddPlace={handleAddPlaceClick}
-            cards={cards}
-            onCardClick={handleCardClick}
-            onCardDelete={handleCardDelete}
-            onCardLike={handleCardLike}
-            onLoading={isLoading}
-          />
+          <Switch>
 
-          <Login />
+            <ProtectedRoute
+              exact
+              path="/"
+              loggedIn={loggedIn}
+              onEditProfile={handleEditProfileClick}
+              onAddPlace={handleAddPlaceClick}
+              onEditAvatar={handleEditAvatarClick}
+              cards={cards}
+              onCardClick={handleCardClick}
+              onCardDelete={handleCardDelete}
+              onCardLike={handleCardLike}
+              onLoading={isLoading}
+              component={Main}
+            />
 
+            <Route path="/sign-in">
+              <Login handleLogin={handleLogin} />
+            </Route>
+
+            <Route path="/sign-up">
+              <Register handleRegister={handleRegister} isDataSet={isDataSet} />
+            </Route>
+
+            <Route exact path="/">
+              {loggedIn ? <Redirect to="/" /> : <Redirect to="/sign-in" />}
+            </Route>
+
+          </Switch>
           <Footer copyright="© 2020 Mesto Russia. Сергей Компаниец" />
 
           <EditAvatarModal
@@ -167,6 +283,14 @@ function App() {
         </div>
 
         <ImageModal card={selectedCard} onClose={closeAllModals} />
+
+        <InfoToolTip
+          isOpen={isInfoToolTipOpen}
+          onClose={closeAllModals}
+          title={infoToolTipData.title}
+          icon={infoToolTipData.icon}
+        />
+
       </div>
     </CurrentUserContext.Provider>
   );
