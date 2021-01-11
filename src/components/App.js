@@ -52,7 +52,7 @@ function App() {
             setLoggedIn(true);
           }
         })
-        .catch((err) => console.log(err));
+        .catch((err) => console.error(err));
     }
   };
 
@@ -73,10 +73,7 @@ function App() {
       api.getInitialCardList(),
       api.getUserInfo(),
     ])
-      .then((result) => {
-        const cardsData = result[0];
-        const userData = result[1];
-
+      .then(([cardsData, userData]) => {
         const items = cardsData.map((item) => ({
           _id: item._id,
           name: item.name,
@@ -87,11 +84,11 @@ function App() {
 
         setCurrentUser(userData);
         setCards(items);
-        setIsLoading(false);
       })
       .catch((err) => {
         console.error(err);
-      });
+      })
+      .finally(() => setIsLoading(false));
   }, []);
 
   function handleInfoToolTip() {
@@ -101,8 +98,15 @@ function App() {
   const handleLogin = (email, password) => {
     auth
       .authorize(email, password)
-      .then(handleResponse)
-      .catch((err) => console.log(err));
+      .then((data) => {
+        if (data.token) {
+          localStorage.setItem("token", data.token);
+          setUserData({email: email});
+          setLoggedIn(true);
+          history.push('/');
+        }
+      })
+      .catch((err) => console.error(err));
   };
 
   const handleLogout = () => {
@@ -111,18 +115,6 @@ function App() {
     setLoggedIn(false);
   };
 
-  const handleResponse = (data) => {
-    auth
-      .getContent(data.token)
-      .then((res) => {
-        setUserData({ email: res.data.email });
-      })
-      .catch((err) => console.log(err));
-
-    localStorage.setItem("token", data.token);
-
-    setLoggedIn(true);
-  };
 
   const handleRegister = (password, email) => {
     auth
@@ -199,7 +191,10 @@ function App() {
       .then(() => {
         const newCards = cards.filter((item) => item._id !== card._id);
         setCards(newCards);
-      });
+      })
+      .catch((err) => {
+      console.error(err);
+    });
   }
 
   function handleCardLike(card) {
@@ -256,7 +251,7 @@ function App() {
               <Register handleRegister={handleRegister} isDataSet={isDataSet} />
             </Route>
 
-            <Route exact path="/">
+            <Route>
               {loggedIn ? <Redirect to="/" /> : <Redirect to="/sign-in" />}
             </Route>
 
@@ -280,17 +275,16 @@ function App() {
             onClose={closeAllModals}
             onAddPlace={handleAddPlaceSubmit}
           />
+
+          <ImageModal card={selectedCard} onClose={closeAllModals} />
+
+          <InfoToolTip
+            isOpen={isInfoToolTipOpen}
+            onClose={closeAllModals}
+            title={infoToolTipData.title}
+            icon={infoToolTipData.icon}
+          />
         </div>
-
-        <ImageModal card={selectedCard} onClose={closeAllModals} />
-
-        <InfoToolTip
-          isOpen={isInfoToolTipOpen}
-          onClose={closeAllModals}
-          title={infoToolTipData.title}
-          icon={infoToolTipData.icon}
-        />
-
       </div>
     </CurrentUserContext.Provider>
   );
