@@ -5,7 +5,6 @@ const Login = ({ handleLogin }) => {
   const [data, setData] = useState({
     email: "",
     password: "",
-    message: "",
   });
 
   const handleChange = (e) => {
